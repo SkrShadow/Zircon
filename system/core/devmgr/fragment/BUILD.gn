@@ -1,0 +1,96 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/config/fuchsia/rules.gni")
+
+driver_module("fragment") {
+  defines = [ "_ALL_SOURCE" ]
+  configs += [ "//build/config/fuchsia:enable_zircon_asserts" ]
+  configs -= [ "//build/config/fuchsia:no_cpp_standard_library" ]
+  configs += [ "//build/config/fuchsia:static_cpp_standard_library" ]
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  sources = [ "fragment.cc" ]
+  data_deps = [ ":fragment.proxy" ]
+  deps = [
+    "//sdk/banjo/ddk.protocol.amlogiccanvas",
+    "//sdk/banjo/ddk.protocol.buttons",
+    "//sdk/banjo/ddk.protocol.camerasensor",
+    "//sdk/banjo/ddk.protocol.clock",
+    "//sdk/banjo/ddk.protocol.codec",
+    "//sdk/banjo/ddk.protocol.dsiimpl",
+    "//sdk/banjo/ddk.protocol.ethernet.board",
+    "//sdk/banjo/ddk.protocol.gdc",
+    "//sdk/banjo/ddk.protocol.ge2d",
+    "//sdk/banjo/ddk.protocol.gpio",
+    "//sdk/banjo/ddk.protocol.i2c",
+    "//sdk/banjo/ddk.protocol.isp",
+    "//sdk/banjo/ddk.protocol.mipicsi",
+    "//sdk/banjo/ddk.protocol.platform.device",
+    "//sdk/banjo/ddk.protocol.power",
+    "//sdk/banjo/ddk.protocol.powerimpl",
+    "//sdk/banjo/ddk.protocol.pwm",
+    "//sdk/banjo/ddk.protocol.sdio",
+    "//sdk/banjo/ddk.protocol.shareddma",
+    "//sdk/banjo/ddk.protocol.spi",
+    "//sdk/banjo/ddk.protocol.sysmem",
+    "//sdk/banjo/ddk.protocol.tee",
+    "//sdk/banjo/ddk.protocol.thermal",
+    "//sdk/banjo/ddk.protocol.usb.modeswitch",
+    "//sdk/banjo/ddk.protocol.usb.phy",
+    "//sdk/fidl/fuchsia.sysmem:fuchsia.sysmem_c",
+    "//src/devices/lib/driver",
+    "//src/lib/ddk",
+    "//src/lib/ddktl",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/sync",
+    "//zircon/public/lib/zx",
+    "//zircon/system/ulib/trace:trace-driver",
+  ]
+}
+
+driver_module("fragment.proxy") {
+  defines = [ "_ALL_SOURCE" ]
+  configs += [ "//build/config/fuchsia:enable_zircon_asserts" ]
+  configs -= [ "//build/config/fuchsia:no_cpp_standard_library" ]
+  configs += [ "//build/config/fuchsia:static_cpp_standard_library" ]
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  sources = [ "fragment-proxy.cc" ]
+  deps = [
+    "//sdk/banjo/ddk.protocol.amlogiccanvas",
+    "//sdk/banjo/ddk.protocol.buttons",
+    "//sdk/banjo/ddk.protocol.clock",
+    "//sdk/banjo/ddk.protocol.codec",
+    "//sdk/banjo/ddk.protocol.ethernet.board",
+    "//sdk/banjo/ddk.protocol.gpio",
+    "//sdk/banjo/ddk.protocol.i2c",
+    "//sdk/banjo/ddk.protocol.platform.device",
+    "//sdk/banjo/ddk.protocol.power",
+    "//sdk/banjo/ddk.protocol.pwm",
+    "//sdk/banjo/ddk.protocol.spi",
+    "//sdk/banjo/ddk.protocol.sysmem",
+    "//sdk/banjo/ddk.protocol.tee",
+    "//sdk/banjo/ddk.protocol.usb.modeswitch",
+    "//src/devices/lib/driver",
+    "//src/lib/ddk",
+    "//src/lib/ddktl",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/sync",
+    "//zircon/public/lib/zx",
+    "//zircon/system/ulib/trace:trace-driver",
+  ]
+}

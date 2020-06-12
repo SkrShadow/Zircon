@@ -1,0 +1,211 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/test.gni")
+
+declare_args() {
+  netsvc_extra_defines = []
+}
+
+config("netsvc_config") {
+  defines = netsvc_extra_defines
+}
+
+executable("netsvc") {
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  sources = [
+    "debug-command.cc",
+    "debuglog.cc",
+    "netsvc.cc",
+  ]
+  deps = [
+    ":args",
+    ":netsvc_common",
+    "//sdk/fidl/fuchsia.device:fuchsia.device_llcpp",
+    "//sdk/fidl/fuchsia.hardware.ethernet:fuchsia.hardware.ethernet_c",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fdio",
+    "//zircon/public/lib/sync",
+    "//zircon/public/lib/tftp",
+    "//zircon/public/lib/zx",
+    "//zircon/system/ulib/fdio-caller",
+    "//zircon/system/ulib/inet6",
+  ]
+  data_deps = [
+    # netsvc launches /boot/bin/sh for netruncmd.
+    "//zircon/third_party/uapp/dash",
+  ]
+  configs += [ ":netsvc_config" ]
+}
+
+executable("device-name-provider") {
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  sources = [ "device-name-provider.cc" ]
+  deps = [
+    ":args",
+    "//sdk/fidl/fuchsia.device:fuchsia.device_llcpp",
+    "//zircon/system/ulib/async-default",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//zircon/system/ulib/async-loop:async-loop-default",
+    "//zircon/system/ulib/fidl-async:fidl-async-cpp",
+    "//zircon/system/ulib/fs",
+    "//zircon/system/ulib/inet6:netifc-discover",
+    "//zircon/system/ulib/svc",
+  ]
+}
+
+source_set("args") {
+  sources = [ "args.cc" ]
+}
+
+source_set("netsvc_common") {
+  sources = [
+    "board-info.cc",
+    "file-api.cc",
+    "netboot.cc",
+    "netcp.cc",
+    "paver.cc",
+    "payload-streamer.cc",
+    "tftp.cc",
+    "zbi.cc",
+  ]
+  deps = [
+    "//sdk/fidl/fuchsia.boot:fuchsia.boot_c",
+    "//sdk/fidl/fuchsia.device:fuchsia.device_llcpp",
+    "//sdk/fidl/fuchsia.device.manager:fuchsia.device.manager_c",
+    "//sdk/fidl/fuchsia.hardware.block:fuchsia.hardware.block_llcpp",
+    "//sdk/fidl/fuchsia.kernel:fuchsia.kernel_c",
+    "//sdk/fidl/fuchsia.sysinfo:fuchsia.sysinfo_llcpp",
+    "//zircon/public/lib/fdio",
+    "//zircon/public/lib/libzbi",
+    "//zircon/system/ulib/async-default",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//zircon/system/ulib/async-loop:async-loop-default",
+    "//zircon/system/ulib/bootfs",
+    "//zircon/system/ulib/fdio-caller",
+    "//zircon/system/ulib/fidl-async:fidl-async-cpp",
+    "//zircon/system/ulib/gpt",
+    "//zircon/system/ulib/sysconfig-client:sysconfig-sync-client",
+  ]
+  public_deps = [
+    "//sdk/fidl/fuchsia.paver:fuchsia.paver_llcpp",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/sync",
+    "//zircon/public/lib/tftp",
+    "//zircon/public/lib/zx",
+    "//zircon/system/ulib/fzl",
+    "//zircon/system/ulib/inet6",
+  ]
+
+  # TODO(45621): UBSan has found an instance of undefined behavior in this target.
+  # Disable UBSan for this target temporarily until it is migrated into CI/CQ.
+  configs += [ "//build/config:temporarily_disable_ubsan_do_not_use" ]
+
+  configs += [ "//build/config:Wno-unused-function" ]
+}
+
+test("netsvc-test") {
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  if (is_fuchsia) {
+    testonly = false
+  }
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  output_name = "netsvc-test"
+  sources = [
+    "test/args-test.cc",
+    "test/file-api-test.cc",
+    "test/paver-test.cc",
+    "test/payload-streamer-test.cc",
+    "test/tftp-test.cc",
+  ]
+  include_dirs = [ "." ]
+  deps = [
+    ":args",
+    ":netsvc_common",
+    "//sdk/fidl/fuchsia.device:fuchsia.device_llcpp",
+    "//sdk/fidl/fuchsia.sysinfo:fuchsia.sysinfo_llcpp",
+    "//zircon/public/lib/fdio",
+    "//zircon/public/lib/zx",
+    "//zircon/public/lib/zxtest",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//zircon/system/ulib/async-loop:async-loop-default",
+    "//zircon/system/ulib/devmgr-integration-test",
+    "//zircon/system/ulib/driver-integration-test",
+    "//zircon/system/ulib/fidl-async:fidl-async-cpp",
+    "//zircon/system/ulib/fs",
+    "//zircon/system/ulib/ramdevice-client",
+  ]
+  data_deps = [ ":netsvc" ]
+  configs += [ "//build/config:Wno-unused-function" ]
+}
+
+test("netsvc-stress-test") {
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  if (is_fuchsia) {
+    testonly = false
+  }
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  output_name = "netsvc-stress-test"
+  sources = [ "test/paver-stress-test.cc" ]
+  include_dirs = [ "." ]
+  deps = [
+    ":netsvc_common",
+    "//sdk/fidl/fuchsia.device:fuchsia.device_llcpp",
+    "//sdk/fidl/fuchsia.sysinfo:fuchsia.sysinfo_llcpp",
+    "//zircon/public/lib/fdio",
+    "//zircon/public/lib/zx",
+    "//zircon/public/lib/zxtest",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//zircon/system/ulib/devmgr-integration-test",
+    "//zircon/system/ulib/driver-integration-test",
+    "//zircon/system/ulib/fidl-async:fidl-async-cpp",
+    "//zircon/system/ulib/fs",
+    "//zircon/system/ulib/ramdevice-client",
+  ]
+  data_deps = [ ":netsvc" ]
+}

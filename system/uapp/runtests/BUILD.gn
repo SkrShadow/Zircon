@@ -1,0 +1,36 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+executable("runtests") {
+  configs += [ "//build/unification/config:zircon-migrated" ]
+
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  testonly = false
+  sources = [ "runtests.cc" ]
+  deps = [
+    "//sdk/fidl/fuchsia.logger:fuchsia.logger_c",
+    "//zircon/public/lib/async",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fidl",
+    "//zircon/public/lib/zircon-internal",
+    "//zircon/public/lib/zx",
+    "//zircon/system/ulib/async-loop",
+    "//zircon/system/ulib/loader-service",
+    "//zircon/system/ulib/runtests-utils",
+  ]
+
+  # TODO(45181): Fix the leaks and remove this.
+  deps += [ "//build/config/sanitizers:suppress-lsan.DO-NOT-USE-THIS" ]
+}

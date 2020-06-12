@@ -1,0 +1,97 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/test.gni")
+
+executable("ptysvc") {
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  sources = [ "main.cc" ]
+  deps = [
+    ":common",
+    "//src/sys/lib/stdout-to-debuglog/cpp",
+    "//zircon/public/lib/fdio",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//zircon/system/ulib/fidl-async:fidl-async-cpp",
+  ]
+}
+
+source_set("common") {
+  visibility = [ ":*" ]
+  sources = [
+    "fifo.cc",
+    "fifo.h",
+    "pty-client-device.cc",
+    "pty-client-device.h",
+    "pty-client-vnode.h",
+    "pty-client.cc",
+    "pty-client.h",
+    "pty-server-device.cc",
+    "pty-server-device.h",
+    "pty-server-vnode.h",
+    "pty-server.cc",
+    "pty-server.h",
+  ]
+  public_deps = [
+    "//sdk/fidl/fuchsia.device:fuchsia.device_llcpp",
+    "//sdk/fidl/fuchsia.hardware.pty:fuchsia.hardware.pty_llcpp",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fit",
+    "//zircon/public/lib/zircon-internal",
+    "//zircon/public/lib/zx",
+    "//zircon/system/ulib/fs",
+    "//zircon/system/ulib/fs-pty",
+  ]
+
+  deps = [
+    "//sdk/fidl/fuchsia.io:fuchsia.io_llcpp",
+    "//zircon/public/lib/fdio",
+    "//zircon/system/ulib/fidl-async:fidl-async-cpp",
+  ]
+}
+
+test("ptysvc-test") {
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  if (is_fuchsia) {
+    testonly = false
+  }
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  test_group = "sys"
+
+  sources = [ "pty-tests.cc" ]
+  deps = [
+    ":common",
+    "//sdk/fidl/fuchsia.io:fuchsia.io_llcpp",
+    "//zircon/public/lib/sync",
+    "//zircon/public/lib/zxtest",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//zircon/system/ulib/async-loop:async-loop-default",
+  ]
+}

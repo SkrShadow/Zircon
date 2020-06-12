@@ -1,0 +1,37 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/test.gni")
+import("//build/test/test_package.gni")
+
+test("register-state") {
+  configs += [ "//build/unification/config:zircon-migrated" ]
+  sources = [ "register-state-test.cc" ]
+  deps = [
+    "//zircon/public/lib/fdio",
+    "//zircon/public/lib/zxtest",
+  ]
+}
+
+unittest_package("register-state-package") {
+  package_name = "register-state"
+  deps = [ ":register-state" ]
+
+  tests = [
+    {
+      name = "register-state"
+      dest = "register-state-test"
+    },
+  ]
+}

@@ -1,0 +1,76 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/test.gni")
+
+import("//zircon/public/gn/toolchain/c_utils.gni")
+
+group("constructors") {
+  testonly = true
+  deps = [ ":fdio-constructor" ]
+}
+
+# This bogus test is necessary to have the verification run in the variant
+# toolchain.
+test("fdio-constructor") {
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  if (is_fuchsia) {
+    testonly = false
+  }
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  sources = [ "bogus-test.cc" ]
+
+  # fdio must not have any static constructors, because its code must work
+  # before static constructors have run.  Some compiler instrumentation
+  # modes generate static constructors that are harmless and superfluous, so
+  # don't check those builds.  Note that it's important that this be in deps
+  # here rather than in the group() above, because this will be evaluated
+  # after variant selection has chosen which build to actually test.
+  if (!toolchain_variant.instrumented) {
+    deps = [ ":no-static-ctor" ]
+  }
+}
+
+fdio_rspfile = "$target_gen_dir/fdio.rsp"
+link_output_rspfile("fdio-rspfile") {
+  visibility = [ ":*" ]
+  deps = [ "//zircon/public/lib/fdio" ]
+  outputs = [ fdio_rspfile ]
+}
+
+toolchain_utils_action("no-static-ctor") {
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Restore to true when converting this file to proper GN build idioms.
+  testonly = false
+  script = "no-static-ctor.sh"
+  utils = [ "readelf" ]
+  outputs = [ "$target_out_dir/$target_name" ]
+  depfile = "${outputs[0]}.d"
+  deps = [ ":fdio-rspfile" ]
+  inputs = [ fdio_rspfile ]
+  args = [
+    "@" + rebase_path(fdio_rspfile, root_build_dir),
+    rebase_path(outputs[0], root_build_dir),
+    rebase_path(depfile, root_build_dir),
+  ]
+}

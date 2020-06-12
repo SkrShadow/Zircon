@@ -1,0 +1,103 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36548.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/unification/zbi/resource.gni")
+import("//build/unification/zx_library.gni")
+
+config("fdio_includes") {
+  include_dirs = [ "include" ]
+}
+
+# TODO(38226): This is a kludge to make "foosan-fuzzer" builds actually just use
+# the plain "foosan" build of libfdio.  This works around the problem that
+# libfuzzer itself calls into libfdio and so its own calls pollute the data
+# it's collecting about the code under test. We explicitly depend on the build
+# that has the same foosan instrumentation to catch bugs but doesn't have the
+# fuzzer (i.e. coverage tracking) instrumentation that influences libfuzzer's
+# choices.
+#
+# In Fuchsia's GN, this requires a `select_variant` scope in args.gn must
+# specify the "foosan" varaint for the toolchain variant to be available.
+# `fx set`ensures this by adding a `select_variant` scope for libfdio.so itself
+# with its "-fuzz-with" parameter.
+fuzzer_configs = [ "//build/config/sanitizers:fuzzer" ]
+if (toolchain_variant.configs + fuzzer_configs - fuzzer_configs !=
+    toolchain_variant.configs) {
+  group("fdio") {
+    suffix = string_replace(toolchain_variant.suffix, "-fuzzer", "")
+    public_deps = [ ":fdio(${toolchain_variant.base}${suffix})" ]
+    public_configs = [ ":fdio_includes" ]
+  }
+} else if (is_fuchsia) {
+  zx_library("fdio") {
+    sdk = "shared"
+    sdk_publishable = true
+    sdk_headers = [
+      "lib/fdio/directory.h",
+      "lib/fdio/fd.h",
+      "lib/fdio/fdio.h",
+      "lib/fdio/io.h",
+      "lib/fdio/limits.h",
+      "lib/fdio/namespace.h",
+      "lib/fdio/private.h",
+      "lib/fdio/spawn.h",
+      "lib/fdio/unsafe.h",
+      "lib/fdio/vfs.h",
+      "lib/fdio/watcher.h",
+    ]
+    shared = true
+    sources = [
+      "bsdsocket.cc",
+      "event.cc",
+      "fd.cc",
+      "fdio.cc",
+      "get-vmo.cc",
+      "iovec.cc",
+      "namespace/local-connection.cc",
+      "namespace/local-filesystem.cc",
+      "namespace/local-vnode.cc",
+      "namespace/namespace.cc",
+      "null.cc",
+      "remoteio.cc",
+      "socket.cc",
+      "spawn.cc",
+      "stubs.cc",
+      "timer.cc",
+      "uname.cc",
+      "unistd.cc",
+      "waitable.cc",
+      "watcher.cc",
+      "zxio.cc",
+    ]
+    deps = [
+      "//sdk/fidl/fuchsia.device:fuchsia.device_llcpp",
+      "//sdk/fidl/fuchsia.io:fuchsia.io_llcpp",
+      "//sdk/fidl/fuchsia.io2:fuchsia.io2_llcpp",
+      "//sdk/fidl/fuchsia.net:fuchsia.net_llcpp",
+      "//sdk/fidl/fuchsia.posix.socket:fuchsia.posix.socket_llcpp",
+      "//sdk/fidl/fuchsia.process:fuchsia.process_c",
+      "//zircon/public/lib/fbl",
+      "//zircon/public/lib/fidl",
+      "//zircon/public/lib/safemath",
+      "//zircon/public/lib/zircon-internal",
+      "//zircon/public/lib/zx",
+      "//zircon/system/ulib/zxio",
+    ]
+    public_configs = [ "//build/config:Wno-unused-function" ]
+  }
+} else {
+  source_set("fdio") {
+    public_configs = [ ":fdio_includes" ]
+  }
+}

@@ -1,0 +1,40 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/test.gni")
+
+test("vdso-variant") {
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  testonly = false
+  configs += [ "//build/unification/config:zircon-migrated" ]
+  sources = [ "vdso-variant.c" ]
+  deps = [ "//zircon/public/lib/fdio" ]
+  data_deps = [ ":vdso-variant-helper" ]
+  libs = [ "zircon" ]
+}
+
+executable("vdso-variant-helper") {
+  configs += [ "//build/unification/config:zircon-migrated" ]
+
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  testonly = false
+  visibility = [ ":*" ]
+  sources = [ "helper/vdso-variant-helper.c" ]
+  deps = [
+    "//zircon/public/lib/fdio",
+    "//zircon/system/ulib/unittest",
+  ]
+}

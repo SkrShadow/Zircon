@@ -1,0 +1,145 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+##########################################
+# Though under //zircon, this build file #
+# is meant to be used in the Fuchsia GN  #
+# build.                                 #
+# See fxb/36139.                         #
+##########################################
+
+assert(!defined(zx) || zx != "/",
+       "This file can only be used in the Fuchsia GN build.")
+
+import("//build/test.gni")
+
+group("test") {
+  testonly = true
+  deps = [ ":fdio" ]
+}
+
+test("fdio") {
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Remove when converting this file to proper GN build idioms.
+  if (is_fuchsia) {
+    testonly = false
+  }
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+
+  # If your test can run on host as well as target, consider adding it to
+  # fdio_hosttests in the "host" directory.
+  sources = [
+    "fdio_atexit.cc",
+    "fdio_directory.cc",
+    "fdio_eventfd.cc",
+    "fdio_fd.cc",
+    "fdio_fdio.cc",
+    "fdio_get_vmo.cc",
+    "fdio_handle_fd.c",
+    "fdio_io.cc",
+    "fdio_null_namespace.cc",
+    "fdio_open_max.c",
+    "fdio_path_canonicalize.c",
+    "fdio_root.c",
+    "fdio_socket.cc",
+    "fdio_socketpair.cc",
+    "fdio_startup.cc",
+    "fdio_stubs.cc",
+    "fdio_timerfd.cc",
+    "fdio_unsafe.cc",
+    "fdio_watcher.cc",
+  ]
+  deps = [
+    "//sdk/fidl/fuchsia.io:fuchsia.io_llcpp",
+    "//sdk/fidl/fuchsia.posix.socket:fuchsia.posix.socket_llcpp",
+    "//sdk/fidl/fuchsia.process:fuchsia.process_c",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fdio",
+    "//zircon/public/lib/sync",
+    "//zircon/public/lib/zx",
+    "//zircon/public/lib/zxtest",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//zircon/system/ulib/async-loop:async-loop-default",
+    "//zircon/system/ulib/fidl-async",
+    "//zircon/system/ulib/fidl-async:fidl-async-cpp",
+    "//zircon/system/ulib/test-utils",
+  ]
+
+  data_deps = [
+    ":accept-child",
+    ":hello-world",
+    ":null-namespace-child",
+  ]
+
+  # TODO(45177): Fix the leaks and remove this.
+  deps += [ "//build/config/sanitizers:suppress-lsan.DO-NOT-USE-THIS" ]
+}
+
+executable("accept-child") {
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  visibility = [ ":*" ]
+
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Revert to true when converting this file to proper GN build idioms.
+  testonly = false
+  sources = [ "fdio_atexit_test_accept_child.cc" ]
+  deps = [ "//zircon/public/lib/fdio" ]
+  libs = [ "zircon" ]
+}
+
+# Used by tests in fdio_startup.cc.
+executable("hello-world") {
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  visibility = [ ":*" ]
+
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Revert to true when converting this file to proper GN build idioms.
+  testonly = false
+  sources = [ "hello.cc" ]
+  deps = [ "//zircon/public/lib/fdio" ]
+}
+
+executable("null-namespace-child") {
+  if (is_fuchsia) {
+    configs += [ "//build/unification/config:zircon-migrated" ]
+  }
+  if (is_fuchsia) {
+    fdio_config = [ "//build/config/fuchsia:fdio_config" ]
+    if (configs + fdio_config - fdio_config != configs) {
+      configs -= fdio_config
+    }
+  }
+  visibility = [ ":*" ]
+
+  # Dependent manifests unfortunately cannot be marked as `testonly`.
+  # TODO(44278): Revert to true when converting this file to proper GN build idioms.
+  testonly = false
+  sources = [ "fdio_null_namespace_child.c" ]
+  deps = [ "//zircon/public/lib/fdio" ]
+  libs = [ "zircon" ]
+}
